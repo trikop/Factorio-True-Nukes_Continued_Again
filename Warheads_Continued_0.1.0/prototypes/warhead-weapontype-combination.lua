@@ -124,6 +124,10 @@ local function combine(weapontype, warheadWeapon)
     item.ammo_type.clamp_position = weapontype.item.clamp_position or warheadWeapon.item.clamp_position
     item.ammo_category = warheadWeapon.item.ammo_category or weapontype.item.ammo_category
     item.ammo_type.action = weapontype.item.action_creator(name, weapontype.item.range_modifier * warheadWeapon.item.range_modifier, warheadWeapon.projectile.action, warheadWeapon.projectile.final_action, warheadWeapon.projectile.created_action)
+    if not item.ammo_type.action then
+      log("WARNING: Skipping unsupported weapon/warhead combination: " .. name)
+      return {valid = false}
+    end
   elseif(weapontype.type == "land-mine") then
     item.place_result = name
   elseif(weapontype.type == "capsule") then
@@ -141,7 +145,7 @@ local function combine(weapontype, warheadWeapon)
   recipe.name = name
   recipe.enabled = false
   recipe.order = weapontype.order .. warheadWeapon.appendOrder
-  recipe.category = weapontype.recipe.category
+  recipe.categories = weapontype.recipe.categories
   recipe.subgroup = weapontype.recipe.subgroup
   recipe.energy_required = weapontype.recipe.energy_required * warheadWeapon.recipe.energy_required_modifier
   recipe.crafting_machine_tint = warheadWeapon.recipe.crafting_machine_tint

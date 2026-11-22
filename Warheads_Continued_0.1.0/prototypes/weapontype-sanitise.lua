@@ -1,6 +1,29 @@
 local util = require("warheads")
 
 
+local function findProjectileDelivery(action, seen)
+  if type(action) ~= "table" then
+    return nil
+  end
+
+  seen = seen or {}
+  if seen[action] then
+    return nil
+  end
+  seen[action] = true
+
+  if action.projectile then
+    return action
+  end
+
+  for _, child in pairs(action) do
+    local delivery = findProjectileDelivery(child, seen)
+    if delivery then
+      return delivery
+    end
+  end
+end
+
 
 local function sanitseWeapontype(weapontype)
   local item = weapontype.item or {}
@@ -241,30 +264,11 @@ local function sanitseWeapontype(weapontype)
     if result.type == "projectile" or result.type == "artillery" then
       result.item.action_creator = function (projectile, range_mult, target_action, final_action, source_action)
         local a = table.deepcopy(item.ammo_type.action)
-        local to_use = nil
-        for _,act in pairs(a) do
-          local action = act
-          if(a.action_delivery)then
-            action = a
-          end
-          if(action.action_delivery.projectile) then
-            to_use = action.action_delivery
-          else
-            for _,del in pairs(action.action_delivery) do
-              if (type(del) == "table" and del.projectile) then
-                to_use = del
-              end
-            end
-          end
-          if(to_use) then
-            break
-          end
-        end
+        local to_use = findProjectileDelivery(a)
         if(not to_use) then
           log("ERROR: Cannot find projectile field")
           log("NAME: " .. item.name)
-          local ERROR_No_projectile_field_on_item____PLEASE_REPORT_AS_BUG_ON_MOD_PAGE = nil
-          log(ERROR_No_projectile_field_on_item____PLEASE_REPORT_AS_BUG_ON_MOD_PAGE.a)
+          return nil
         end
         to_use.projectile = projectile
         if(to_use.max_range) then
@@ -423,7 +427,7 @@ local function sanitseWeapontype(weapontype)
     end
   end
   result.recipe.energy_required = weapontype.energy_required
-  result.recipe.category = weapontype.recipe_category
+  result.recipe.categories = weapontype.recipe_category and {weapontype.recipe_category}
   result.recipe.subgroup = weapontype.recipe_subgroup
   result.recipe.hide_from_player_crafting = weapontype.hide_from_player_crafting
   result.recipe.warhead_count = weapontype.warhead_count or result.item.magazine_size
